@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import sys
+import json
 
 
 def cart_to_polar(cart: np.ndarray) -> np.ndarray:
@@ -34,10 +35,14 @@ def log_progress(step: int, total_steps: int,
     """
 
     percent = step / total_steps * 100
+
     # clear the current line
     print('\r', end='')
-    # print the progress bar
+
+    # make the progress bar
     bar = f"[{'=' * int(percent / 10):10s}] {percent:.1f}%"
+
+    # add the time information
     if start_time is not None:
         elapsed_time = time.time() - start_time
         estimated_time = elapsed_time / (step + 1) * (total_steps - step - 1)
@@ -49,5 +54,16 @@ def log_progress(step: int, total_steps: int,
         )
     else:
         print(bar, end='')
+
     # flush the output buffer
     sys.stdout.flush()
+
+
+def load_data(filename: str = 'data/log.json'):
+    with open(filename) as f:
+        data = json.load(f)
+    return data
+
+
+planets: list[str] = ['mercury', 'venus', 'earth', 'mars',
+                      'jupiter', 'saturn', 'uranus', 'neptune']

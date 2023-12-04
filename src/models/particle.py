@@ -1,8 +1,19 @@
 from __future__ import annotations
 import numpy as np
+from enum import Enum
+from typing import Callable
+
+
+class UpdateMethod(Enum):
+    EULER = 1
+    VERLET = 2
 
 
 class Particle:
+    """
+    A class that represents a particle in a simulation.
+    """
+
     def __init__(
         self,
         position: np.ndarray = np.array([0, 0, 0], dtype=float),
@@ -10,6 +21,7 @@ class Particle:
         acceleration: np.ndarray = np.array([0, -10, 0], dtype=float),
         name: str = 'Ball',
         mass: float = 1.0,
+        method: UpdateMethod = UpdateMethod.EULER
     ):
         # convert numpy arrays to arrays of floats
         self.position = np.array(position, dtype=float)
@@ -20,6 +32,69 @@ class Particle:
         self.mass = mass
         self.G = 6.67408e-11
 
+        # set the update method
+        self._method = method
+
+        # create a dictionary of update methods
+        self._method_map: dict[UpdateMethod, Callable[[float], None]] = {
+            UpdateMethod.EULER: self.euler_update,
+            UpdateMethod.VERLET: self.verlet_update
+        }
+
+    def set_method(self, method: UpdateMethod) -> None:
+        """
+        Args:
+            method (UpdateMethod): The method to use to update the particle.
+        Returns:
+            None
+
+        Sets the method used to update the particle.
+        """
+        self._method = method
+
+    @property
+    def method(self) -> UpdateMethod:
+        return self._method
+
+    def euler_update(self, deltaT: float) -> None:
+        """
+        Args:
+            deltaT (float): The amount of time to update the particle by.
+        Returns:
+            None
+
+        Updates the position and velocity of the particle by the amount of time
+        using the Euler method.
+        """
+        self.position += self.velocity * deltaT
+        self.velocity += self.acceleration * deltaT
+
+    def verlet_update(self, deltaT: float) -> None:
+        """
+        Args:
+            deltaT (float): The amount of time to update the particle by.
+        Returns:
+            None
+
+        Updates the position and velocity of the particle by the amount of time
+        using the Verlet method.
+        """
+        self.position += self.velocity * deltaT + 0.5 * self.acceleration * deltaT**2
+        self.velocity += 0.5 * (self.acceleration + self.acceleration) * deltaT
+
+    def euler_cromer_update(self, deltaT: float) -> None:
+        """
+        Args:
+            deltaT (float): The amount of time to update the particle by.
+        Returns:
+            None
+
+        Updates the position and velocity of the particle by the amount of time
+        using the Euler-Cromer method.
+        """
+        self.velocity += self.acceleration * deltaT
+        self.position += self.velocity * deltaT
+
     def update(self, deltaT: float) -> None:
         """
         Args:
@@ -29,8 +104,7 @@ class Particle:
 
         Updates the position and velocity of the particle by the amount of time
         """
-        self.position += self.velocity * deltaT
-        self.velocity += self.acceleration * deltaT
+        self._method_map[self._method](deltaT)
 
     def update_gravitational_acceleration(self,
                                           bodies: list[Particle]) -> None:
@@ -49,12 +123,16 @@ class Particle:
             acceleration = np.array([0, 0, 0], dtype=float)
             # calculate the distance between the two particles
             distance = np.linalg.norm(self.position - body.position)
+
             # calculate the gravitational force
             force = self.G * self.mass * body.mass / distance**2
+
             # calculate the direction of the force
             direction = (body.position - self.position) / distance
+
             # calculate the acceleration
             acceleration = force / self.mass * direction
+
             # add the acceleration to the total acceleration
             total_acceleration += acceleration
 

@@ -229,18 +229,28 @@ def animation_3d(data: dict):
         ax.set_ylim(-lim, lim)
         for planet, planet_data in planets_data.items():
             planet_x, planet_y, planet_z = planet_data
+
+            # create trajectory arrays
             planet_x = planet_x[:i+1]
             planet_y = planet_y[:i+1]
             planet_z = planet_z[:i+1]
+
+            # create point arrays
             planet_point_x = planet_x[-1]
             planet_point_y = planet_y[-1]
             planet_point_z = planet_z[-1]
+
+            # plot trajectory
             line1 = ax.plot(planet_x, planet_y, planet_z,
                             label=planet, linewidth=0.5,
                             color=style[planet])
+
+            # plot point
             line2 = ax.plot(planet_point_x, planet_point_y, planet_point_z,
                             marker='o', markersize=5,
                             color=style[planet])
+
+            # add lines to list
             lines.append(line1[0])
             lines.append(line2[0])
 

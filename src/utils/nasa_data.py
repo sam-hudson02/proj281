@@ -1,7 +1,246 @@
 import requests
 import json
-
+from datetime import datetime, timedelta
+import numpy as np
 # Get the data from the NASA API
+
+
+def test_request():
+    body = '399'
+    requester = NasaQuery()
+    response = requester._make_request(body)
+    json_data = response.json()
+    text_data = json_data['result']
+    with open('test_data.txt', 'w') as f:
+        f.write(text_data)
+
+
+def test_parser():
+    with open('test_data.txt', 'r') as f:
+        data = f.read()
+    parser = NasaDataParser(data)
+    parsed = parser.parse()
+    print(parsed)
+
+
+class NasaObjectData:
+    def __init__(self, parsed_json: dict):
+        self.mass = parsed_json['mass']
+        self.radius = parsed_json['radius']
+        self.rot_per = parsed_json['rot_per']
+
+
+class NasaData:
+    def __init__(self, parsed_json: dict):
+        self.object_data = NasaObjectData(parsed_json['object_data'])
+        self.vector_data: dict['str',
+                               dict['str', np.ndarray]] = parsed_json['vector_data']
+
+
+class NasaQuery:
+    def __init__(self,
+                 center: str = '500@0',
+                 start_time: datetime = datetime.now(),
+                 stop_time: datetime = datetime.now() + timedelta(days=1),
+                 object_data: bool = True):
+        self.url = 'https://ssd.jpl.nasa.gov/api/horizons.api?format=json'
+        self.center = center
+        self.start_time = start_time
+        self.stop_time = stop_time
+        self.object_data = object_data
+        self.csv_format = True
+        self.make_emphemeris = True
+        self.emphemeris_type = 'VECTOR'
+        self.step_size = '1%20d'
+
+    def _make_request(self, body: str):
+
+        url = self.url
+        url += f'&COMMAND=\'{body}\''
+        url += f'&CENTER=\'{self.center}\''
+        url += f'&START_TIME=\'{self.start_time.strftime("%Y-%m-%d %H:%M")}\''
+        url += f'&STOP_TIME=\'{self.stop_time.strftime("%Y-%m-%d %H:%M")}\''
+        if self.object_data:
+            url += '&MAKE_OBJECT=\'YES\''
+        else:
+            url += '&MAKE_OBJECT=\'NO\''
+
+        if self.csv_format:
+            url += '&TABLE_TYPE=\'CSV\''
+
+        if self.make_emphemeris:
+            url += '&MAKE_EPHEM=\'YES\''
+            url += f'&EPHEM_TYPE=\'{self.emphemeris_type}\''
+            url += f'&STEP_SIZE=\'{self.step_size}\''
+
+        return requests.get(url)
+
+    def get_data(self, bodies: list[int]) -> dict[str, NasaData]:
+
+        data = {}
+
+        for body_id in bodies:
+            response = self._make_request(str(body_id))
+            json_data = response.json()
+            parsed = NasaDataParser(json_data['result']).parse()
+            data[body_id] = NasaData(parsed)
+
+        return data
+
+
+class NasaDataParser:
+    def __init__(self, data: str):
+        self.data = data
+
+    def get_chunks(self, lines: list[str]) -> list[list[str]]:
+        """
+        Args:
+            lines (list[str]): The lines of data from the NASA API
+        returns:
+            chunks (list[list[str]]):
+
+        Splits the data into chunks,
+        nasa separates its data with lines of *'s
+        """
+        chunks = []
+        chunk = []
+
+        for line in lines:
+            if line.startswith('*'):
+                if len(chunk) > 0:
+                    chunks.append(chunk)
+                    chunk = []
+            else:
+                chunk.append(line)
+
+        return chunks
+
+    def get_midpoint(self, data_lines: list[str]) -> int:
+        first_data_line = data_lines[0]
+        first_data_line = first_data_line.split('=')
+        hit_val = False
+        hit_whitespace = False
+        mid_point = 0
+        for i, c in enumerate(first_data_line[1]):
+            print('Char:', c)
+            if not hit_val:
+                if c != ' ':
+                    print('Hit val at:', i)
+                    hit_val = True
+            elif not hit_whitespace:
+                if c == ' ':
+                    print('Hit whitespace at:', i)
+                    hit_whitespace = True
+            else:
+                if c != ' ':
+                    print('Hit midpoint at:', i)
+                    mid_point = i - 1
+                    break
+        # add back the length of the first part of the line
+        mid_point += len(first_data_line[0])
+        return mid_point
+
+    def parse_object_info(self, lines: list[str]) -> dict:
+        data_lines = []
+        title_lines = []
+        for line in lines:
+            if '=' in line:
+                data_lines.append(line)
+            else:
+                title_lines.append(line)
+
+        mid_point = self.get_midpoint(data_lines)
+
+        data_key_vales_raw = []
+        for line in data_lines:
+            first_part = line[0:mid_point]
+            second_part = line[mid_point:]
+            if '=' in first_part:
+                data_key_vales_raw.append(first_part)
+            if '=' in second_part:
+                data_key_vales_raw.append(second_part)
+
+        data_key_vales_str = {}
+        for line in data_key_vales_raw:
+            key = line.split('=')[0].strip()
+            value = line.split('=')[1].strip()
+            data_key_vales_str[key] = value
+
+        crop_keys = [
+            ' (km)',
+            ' km',
+            ' g/cm^3',
+            ' s',
+            ' (Ts)',
+            ' (Te)',
+            ' (kg)',
+            ' (deg)',
+            ' (rad/s)',
+        ]
+
+        data_key_vales = {}
+        for key, value in data_key_vales_str.items():
+            print('Cleaning key:', key)
+            print('Cleaning value:', value)
+            mult = 1
+            key = key.split(',')[0]
+            for crop_key in crop_keys:
+                if crop_key in key:
+                    key = key.replace(crop_key, '')
+                key = key.strip()
+                if 'x10^' in key:
+                    mult = 10 ** self.str_to_float(key.split('^')[1])
+                    key = key.split('x10^')[0]
+            key = key.replace(' ', '_')
+            value_float = self.clean_value(value)
+            data_key_vales[key] = value_float * mult
+
+        return data_key_vales
+
+    def clean_value(self, value: str) -> float:
+        value = value.strip()
+        value = value.split('+-')[0]
+        value = value.split('+/-')[0]
+        mult = 1
+        if 'x10^' in value:
+            mult = 10 ** self.str_to_float(value.split('^')[1])
+            value = value.split('x 10^')[0]
+        value_float = self.str_to_float(value)
+        return value_float * mult
+
+    def str_to_float(self, string: str) -> float | list[float]:
+        parts = [string]
+        parsed = []
+        if ',' in string:
+            parts = string.split(',')
+        for part in parts:
+            chars = ''
+            for i, c in enumerate(part):
+                if c.isdigit():
+                    chars += c
+                elif c == '.':
+                    # check surrounding chars
+                    try:
+                        if part[i + 1].isdigit() and part[i - 1].isdigit():
+                            chars += c
+                    except IndexError:
+                        pass
+            if len(chars) > 0:
+                parsed.append(float(chars))
+            else:
+                parsed.append(0)
+        if len(parsed) == 1:
+            return parsed[0]
+        else:
+            return parsed
+
+    def parse(self):
+        parsed_data = {}
+        lines = self.data.split('\n')
+        chunks = self.get_chunks(lines)
+        object_data = self.parse_object_info(chunks[0])
+        parsed_data['object_data'] = object_data
+        return parsed_data
 
 
 def make_request(body: str):
@@ -84,7 +323,7 @@ def scrape_values(lines: list[str]):
     return values
 
 
-def main():
+def main_():
     all_data = get_data()
     to_save = {}
     for name, data in all_data.items():
@@ -96,6 +335,25 @@ def main():
         to_save[name] = values
     with open('data/nasa_data.json', 'w') as f:
         json.dump(to_save, f, indent=4)
+
+
+def main():
+    requester = NasaQuery()
+    data = requester.get_data(
+        [
+            '199',
+            '299',
+            '399',
+            '499',
+            '599',
+            '699',
+            '799',
+            '899',
+            '10'
+        ]
+    )
+    with open('data/nasa_data_test.json', 'w') as f:
+        json.dump(data, f, indent=4)
 
 
 if __name__ == '__main__':
