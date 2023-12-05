@@ -52,12 +52,11 @@ class NasaQuery:
     def __init__(self,
                  center: str = '500@0',
                  start_time: datetime = datetime.now(),
-                 stop_time: datetime = datetime.now() + timedelta(days=1),
                  object_data: bool = True):
         self.url = 'https://ssd.jpl.nasa.gov/api/horizons.api?format=json'
         self.center = center
         self.start_time = start_time
-        self.stop_time = stop_time
+        self.stop_time = start_time + timedelta(days=1)
         self.object_data = object_data
         self.csv_format = True
         self.make_emphemeris = True

@@ -1,9 +1,42 @@
 from models.solar_system import SolarSystem
 from models.particle import Particle
+from sims.simulation import Simulation
+from utils.config import SolarSystemConfig
+from utils.nasa_data import NasaQuery
 from utils.utils import log_progress
 import numpy as np
 import json
 import time
+
+
+class SolarSystemSim(Simulation):
+    def __init__(self, config: SolarSystemConfig):
+        super().__init__('sol')
+        self._config = config
+        self._deltaT = self.get_deltaT()
+        self._particle_ids = self._config.particles
+        self._start_time = self._config.start_time
+        self._steps = self._config.steps
+        self._nq = NasaQuery(start_time=self._start_time)
+        self._particles = self.load_particles()
+
+    def get_deltaT(self) -> float:
+        return self._config.deltaT
+
+    def load_particles(self) -> list[Particle]:
+        particles = []
+        particles_data = self._nq.get_data(self._particle_ids)
+        ts = list(
+            particles_data[str(self._particle_ids[0])].vector_data.keys())[0]
+        for particle_id, data in particles_data.items():
+            position = np.array(data.vector_data[ts]['position'])
+            velocity = np.array(data.vector_data[ts]['velocity'])
+            mass = data.object_data.mass
+            name = particle_id
+            particle = Particle(position=position, velocity=velocity,
+                                mass=mass, name=name)
+            particles.append(particle)
+        return particles
 
 
 def load_particles(filename: str) -> list[Particle]:

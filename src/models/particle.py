@@ -183,6 +183,8 @@ class Particle:
             'position': self.position.tolist(),
             'velocity': self.velocity.tolist(),
             'acceleration': self.acceleration.tolist(),
+            'ke': self.kinetic_energy,
+            'momentum': self.momentum.tolist(),
             'name': self.name,
             'mass': self.mass
         }
