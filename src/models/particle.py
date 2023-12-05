@@ -7,6 +7,7 @@ from typing import Callable
 class UpdateMethod(Enum):
     EULER = 1
     VERLET = 2
+    EULER_CROMER = 3
 
 
 class Particle:
@@ -38,7 +39,8 @@ class Particle:
         # create a dictionary of update methods
         self._method_map: dict[UpdateMethod, Callable[[float], None]] = {
             UpdateMethod.EULER: self.euler_update,
-            UpdateMethod.VERLET: self.verlet_update
+            UpdateMethod.VERLET: self.verlet_update,
+            UpdateMethod.EULER_CROMER: self.euler_cromer_update
         }
 
     def set_method(self, method: UpdateMethod) -> None:
@@ -148,6 +150,16 @@ class Particle:
             np.float64: The kinetic energy of the particle.
         """
         return 0.5 * self.mass * np.linalg.norm(self.velocity)**2
+
+    @property
+    def momentum(self) -> np.ndarray:
+        """
+        Args:
+            None
+        Returns:
+            np.ndarray: The momentum of the particle.
+        """
+        return self.mass * self.velocity
 
     def __str__(self):
         return "Particle: {0}, Mass: {1:.3e}, Position: {2}, \

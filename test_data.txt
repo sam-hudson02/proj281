@@ -30,14 +30,14 @@
 
 
 *******************************************************************************
-Ephemeris / API_USER Mon Dec  4 09:09:24 2023 Pasadena, USA      / Horizons
+Ephemeris / API_USER Tue Dec  5 08:52:21 2023 Pasadena, USA      / Horizons
 *******************************************************************************
 Target body name: Earth (399)                     {source: DE441}
 Center body name: Solar System Barycenter (0)     {source: DE441}
 Center-site name: BODY CENTER
 *******************************************************************************
-Start time      : A.D. 2023-Dec-01 00:00:00.0000 TDB
-Stop  time      : A.D. 2023-Dec-02 00:00:00.0000 TDB
+Start time      : A.D. 2023-Dec-05 00:00:00.0000 TDB
+Stop  time      : A.D. 2023-Dec-06 00:00:00.0000 TDB
 Step-size       : 1440 minutes
 *******************************************************************************
 Center geodetic : 0.0, 0.0, 0.0                   {E-lon(deg),Lat(deg),Alt(km)}
@@ -46,25 +46,16 @@ Center radii    : (undefined)
 Output units    : KM-S
 Calendar mode   : Mixed Julian/Gregorian
 Output type     : GEOMETRIC cartesian states
-Output format   : 3 (position, velocity, LT, range, range-rate)
+Output format   : 2 (position and velocity)
 Reference frame : Ecliptic of J2000.0
 *******************************************************************************
-JDTDB
-   X     Y     Z
-   VX    VY    VZ
-   LT    RG    RR
-*******************************************************************************
+            JDTDB,            Calendar Date (TDB),                      X,                      Y,                      Z,                     VX,                     VY,                     VZ,
+**************************************************************************************************************************************************************************************************
 $$SOE
-2460279.500000000 = A.D. 2023-Dec-01 00:00:00.0000 TDB 
- X = 5.361245933506583E+07 Y = 1.365637821399999E+08 Z = 2.328046844377369E+04
- VX=-2.812102736866474E+01 VY= 1.094908971337918E+01 VZ=-5.927513951968777E-04
- LT= 4.893734623057500E+02 RG= 1.467104731446111E+08 RR=-8.444078699754137E-02
-2460280.500000000 = A.D. 2023-Dec-02 00:00:00.0000 TDB 
- X = 5.117442007512020E+07 Y = 1.374887081850561E+08 Z = 2.324088025294989E+04
- VX=-2.831371103660820E+01 VY= 1.046059367362044E+01 VZ=-3.249421009474673E-04
- LT= 4.893507682880366E+02 RG= 1.467036696492589E+08 RR=-7.310136832766341E-02
+2460283.500000000, A.D. 2023-Dec-05 00:00:00.0000,  4.376541257409677E+07,  1.400079659377519E+08,  2.325163354188204E+04, -2.884190450047857E+01,  8.972627853279604E+00,  3.712191486422434E-04,
+2460284.500000000, A.D. 2023-Dec-06 00:00:00.0000,  4.126654261105584E+07,  1.407614906769837E+08,  2.329140453267843E+04, -2.900085255301246E+01,  8.469503257608519E+00,  5.431732491363306E-04,
 $$EOE
-*******************************************************************************
+**************************************************************************************************************************************************************************************************
  
 TIME
 
@@ -107,9 +98,6 @@ REFERENCE FRAME AND COORDINATES
       VX     X-component of velocity vector (km/sec)                           
       VY     Y-component of velocity vector (km/sec)                           
       VZ     Z-component of velocity vector (km/sec)                           
-      LT     One-way down-leg Newtonian light-time (sec)
-      RG     Range; distance from coordinate center (km)
-      RR     Range-rate; radial velocity wrt coord. center (km/sec)
 
 ABERRATIONS AND CORRECTIONS
 

@@ -151,3 +151,35 @@ class TestParticle(unittest.TestCase):
         # check the position within 1% accuracy
         self.assertTrue(np.allclose(self.particle.position,
                                     analytical_position, rtol=0.01))
+
+    def test_euler_cramer(self):
+        """
+        Tests the euler-cramer method accuracy
+        """
+
+        self.create_particle()
+        self.particle.set_method(UpdateMethod.EULER_CRAMER)
+
+        # evolvle the particle for 10 seconds with 1000 steps
+        self.steps = 1000
+        self.dt = 10 / self.steps
+        for _ in range(self.steps):
+            self.particle.update(self.dt)
+
+        # get the analytical solution
+        analytical_position, analytical_velocity = self.analyitical_solution(
+            10)
+
+        print('\n')
+        print("=" * 10 + " Euler-Cramer " + "=" * 10)
+        self.compare_position(analytical_position)
+        print('\n')
+        self.compare_velocity(analytical_velocity)
+
+        # check the position within 1% accuracy
+        self.assertTrue(np.allclose(self.particle.position,
+                                    analytical_position, rtol=0.01))
+
+        # check the velocity within 1% accuracy
+        self.assertTrue(np.allclose(self.particle.velocity,
+                                    analytical_velocity, rtol=0.01))

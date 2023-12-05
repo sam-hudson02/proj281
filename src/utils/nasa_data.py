@@ -25,9 +25,20 @@ def test_parser():
 
 class NasaObjectData:
     def __init__(self, parsed_json: dict):
+        self._parsed_json = parsed_json
         self.mass = parsed_json['mass']
-        self.radius = parsed_json['radius']
-        self.rot_per = parsed_json['rot_per']
+        self.radius = parsed_json['vol._mean_radius']
+        self.rot_rate = self.find_rot_rate()
+
+    def find_rot_rate(self) -> float:
+        """
+        Returns:
+            (float): rotation rate (radians per second)
+        """
+        for k in self._parsed_json.keys():
+            if 'rot._rate' in k:
+                return self._parsed_json[k]
+        return 0.0
 
 
 class NasaData:
@@ -57,21 +68,19 @@ class NasaQuery:
 
         url = self.url
         url += f'&COMMAND=\'{body}\''
-        url += f'&CENTER=\'{self.center}\''
-        url += f'&START_TIME=\'{self.start_time.strftime("%Y-%m-%d %H:%M")}\''
-        url += f'&STOP_TIME=\'{self.stop_time.strftime("%Y-%m-%d %H:%M")}\''
         if self.object_data:
-            url += '&MAKE_OBJECT=\'YES\''
+            url += '&OBJ_DATA=\'YES\''
         else:
-            url += '&MAKE_OBJECT=\'NO\''
+            url += '&OBJ_DATA=\'NO\''
 
-        if self.csv_format:
-            url += '&TABLE_TYPE=\'CSV\''
-
-        if self.make_emphemeris:
-            url += '&MAKE_EPHEM=\'YES\''
-            url += f'&EPHEM_TYPE=\'{self.emphemeris_type}\''
-            url += f'&STEP_SIZE=\'{self.step_size}\''
+        url += '&MAKE_EPHEM=\'YES\''
+        url += f'&EPHEM_TYPE=\'{self.emphemeris_type}\''
+        url += f'&CENTER=\'{self.center}\''
+        url += f'&START_TIME=\'{self.start_time.strftime("%Y-%m-%d")}\''
+        url += f'&STOP_TIME=\'{self.stop_time.strftime("%Y-%m-%d")}\''
+        url += f'&STEP_SIZE=\'{self.step_size}\''
+        url += '&CSV_FORMAT=\'YES\''
+        url += '&VEC_TABLE=\'2\''
 
         return requests.get(url)
 
@@ -192,6 +201,7 @@ class NasaDataParser:
                     mult = 10 ** self.str_to_float(key.split('^')[1])
                     key = key.split('x10^')[0]
             key = key.replace(' ', '_')
+            key = key.lower()
             value_float = self.clean_value(value)
             data_key_vales[key] = value_float * mult
 
@@ -234,12 +244,40 @@ class NasaDataParser:
         else:
             return parsed
 
+    def parse_values(self, lines: list[str]) -> dict[str, dict[str, np.ndarray]]:
+        """
+        Args:
+            lines (list[str]): The lines of data from the NASA API
+        returns:
+            values (dict[str, dict[str, np.ndarray]]):
+                A dictionary of the values of the data
+                The first key is the name of the body
+                The second key is the name of the value
+                The value is a numpy array of the values
+        """
+        values = {}
+        for line in lines:
+            if ',' not in line:
+                continue
+            parts = line.split(',')
+            ts = float(parts[0].strip())
+            pos = np.array([float(parts[2].strip()), float(
+                parts[3].strip()), float(parts[4].strip())])
+            vel = np.array([float(parts[5].strip()), float(
+                parts[6].strip()), float(parts[7].strip())])
+            values[ts] = {'posistion': pos, 'velocity': vel}
+        return values
+
     def parse(self):
         parsed_data = {}
         lines = self.data.split('\n')
         chunks = self.get_chunks(lines)
         object_data = self.parse_object_info(chunks[0])
         parsed_data['object_data'] = object_data
+        for chunk in chunks:
+            if '$$SOE' in chunk[0]:
+                values = self.parse_values(chunk)
+                parsed_data['vector_data'] = values
         return parsed_data
 
 
@@ -338,18 +376,19 @@ def main_():
 
 
 def main():
+    test_request()
     requester = NasaQuery()
     data = requester.get_data(
         [
-            '199',
-            '299',
-            '399',
-            '499',
-            '599',
-            '699',
-            '799',
-            '899',
-            '10'
+            199,
+            299,
+            399,
+            499,
+            599,
+            699,
+            799,
+            899,
+            10
         ]
     )
     with open('data/nasa_data_test.json', 'w') as f:
