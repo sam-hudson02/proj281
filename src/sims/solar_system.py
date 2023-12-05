@@ -19,6 +19,8 @@ class SolarSystemSim(Simulation):
         self._steps = self._config.steps
         self._nq = NasaQuery(start_time=self._start_time)
         self._particles = self.load_particles()
+        self._sim_init_time = time.time()
+        self._solar_system = SolarSystem(self._particles)
 
     def get_deltaT(self) -> float:
         return self._config.deltaT
@@ -33,10 +35,21 @@ class SolarSystemSim(Simulation):
             velocity = np.array(data.vector_data[ts]['velocity'])
             mass = data.object_data.mass
             name = particle_id
-            particle = Particle(position=position, velocity=velocity,
-                                mass=mass, name=name)
+            particle = Particle(position=position,
+                                velocity=velocity,
+                                mass=mass,
+                                name=name)
             particles.append(particle)
         return particles
+
+    def advance(self) -> None:
+        self._solar_system.advance(self._deltaT)
+
+    def run(self) -> None:
+        for step in range(self._steps):
+            self.advance()
+            log_progress(step, self._steps, self._sim_init_time)
+        print('Simulation complete.')
 
 
 def load_particles(filename: str) -> list[Particle]:
