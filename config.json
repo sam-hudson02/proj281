@@ -1,0 +1,22 @@
+{
+    "solar_system": {
+        "depth": "low",
+        "start_time": "2023-12-05",
+        "steps": 315360,
+        "deltaT": 100.0,
+        "method": "verlet",
+        "particles": {
+            "low": [
+                199,
+                299,
+                399,
+                499,
+                599,
+                699,
+                799,
+                899,
+                10
+            ]
+        }
+    }
+}

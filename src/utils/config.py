@@ -1,9 +1,13 @@
 import json
-from typing import TYPE_CHECKING
 from datetime import datetime
-if TYPE_CHECKING:
-    from models.solar_system import Depth
-    from models.particle import UpdateMethod
+from models.particle import UpdateMethod
+from enum import Enum
+
+
+class Depth(Enum):
+    LOW = 0
+    MEDIUM = 1
+    HIGH = 2
 
 
 class SolarSystemConfig:
@@ -15,12 +19,19 @@ class SolarSystemConfig:
         self.steps = self.parse_steps(self._raw.get('steps', '1000'))
         self.deltaT = self.parse_deltaT(self._raw.get('deltaT', '100.0'))
         self.method = self.parse_method(self._raw.get('method', 'euler'))
-        self._raw_particles = self._raw.get('particles', {})
         self.particles = self.parse_particles(self._raw.get('particles', {}))
+        self._raw_particles = self._raw.get('particles', {})
+        self.log_interval = self.parse_log_interval(
+            self._raw.get('log_interval', '100'))
+
+    def parse_log_interval(self, log_interval: str) -> int:
+        try:
+            return int(log_interval)
+        except ValueError:
+            return 100
 
     def parse_particles(self, raw: dict) -> list[int]:
-        raw_particles = raw.get('particles', {})
-        raw_list = raw_particles.get(self.depth.name.lower(), [])
+        raw_list = raw.get(self.depth.name.lower(), [])
         return [int(p) for p in raw_list]
 
     def parse_steps(self, steps: str) -> int:
@@ -70,7 +81,8 @@ class SolarSystemConfig:
             'start_time': self.start_time.strftime('%Y-%m-%d'),
             'steps': self.steps,
             'deltaT': self.deltaT,
-            'method': self.method.name.lower()
+            'method': self.method.name.lower(),
+            'particles': self._raw_particles,
         }
 
 
@@ -80,6 +92,7 @@ class Config:
         self._raw = self._load_config()
         self.solar_system = SolarSystemConfig(
             self._raw.get('solar_system', {}))
+        self.save_config()
 
     def _load_config(self) -> dict:
         try:
@@ -91,6 +104,11 @@ class Config:
                 json.dump({}, f, indent=4)
             return {}
 
+    def to_json(self) -> dict:
+        return {
+            'solar_system': self.solar_system.to_dict(),
+        }
+
     def save_config(self) -> None:
         with open(self._filename, 'w') as f:
-            json.dump(self._config, f, indent=4)
+            json.dump(self.to_json(), f, indent=4)

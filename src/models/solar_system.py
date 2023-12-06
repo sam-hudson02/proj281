@@ -1,11 +1,4 @@
 from models.particle import Particle
-from enum import Enum
-
-
-class Depth(Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
 
 
 class SolarSystem:

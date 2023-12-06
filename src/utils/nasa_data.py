@@ -81,17 +81,32 @@ class NasaQuery:
         url += '&CSV_FORMAT=\'YES\''
         url += '&VEC_TABLE=\'2\''
 
+        # specify kg and km
+        url += '&OUT_UNITS=\'KM-S\''
+
         return requests.get(url)
 
-    def get_data(self, bodies: list[int]) -> dict[str, NasaData]:
+    def get_data(self, bodies: list[int]) -> dict[int, NasaData]:
 
         data = {}
 
+        print(f'Getting data for {len(bodies)} bodies...')
+
         for body_id in bodies:
-            response = self._make_request(str(body_id))
-            json_data = response.json()
-            parsed = NasaDataParser(json_data['result']).parse()
-            data[body_id] = NasaData(parsed)
+            cache_title = f'{body_id}_{self.start_time.strftime("%Y-%m-%d")}'
+            try:
+                with open(f'data/nasa_cache/{cache_title}.json', 'r') as f:
+                    data[body_id] = NasaData(json.load(f))
+                    print(f'Loaded {body_id} from cache')
+                continue
+            except FileNotFoundError:
+                print(f'Downloading {body_id} data from NASA API')
+                response = self._make_request(str(body_id))
+                json_data = response.json()
+                parsed = NasaDataParser(json_data['result']).parse()
+                with open(f'data/nasa_cache/{cache_title}.json', 'w') as f:
+                    json.dump(parsed, f, indent=4)
+                data[body_id] = NasaData(parsed)
 
         return data
 
@@ -130,18 +145,14 @@ class NasaDataParser:
         hit_whitespace = False
         mid_point = 0
         for i, c in enumerate(first_data_line[1]):
-            print('Char:', c)
             if not hit_val:
                 if c != ' ':
-                    print('Hit val at:', i)
                     hit_val = True
             elif not hit_whitespace:
                 if c == ' ':
-                    print('Hit whitespace at:', i)
                     hit_whitespace = True
             else:
                 if c != ' ':
-                    print('Hit midpoint at:', i)
                     mid_point = i - 1
                     break
         # add back the length of the first part of the line
@@ -188,10 +199,11 @@ class NasaDataParser:
 
         data_key_vales = {}
         for key, value in data_key_vales_str.items():
-            print('Cleaning key:', key)
-            print('Cleaning value:', value)
             mult = 1
             key = key.split(',')[0]
+            grams = False
+            if '(g)' in key:
+                grams = True
             for crop_key in crop_keys:
                 if crop_key in key:
                     key = key.replace(crop_key, '')
@@ -199,9 +211,14 @@ class NasaDataParser:
                 if 'x10^' in key:
                     mult = 10 ** self.str_to_float(key.split('^')[1])
                     key = key.split('x10^')[0]
+                if 'x 10^' in key:
+                    mult = 10 ** self.str_to_float(key.split('^')[1])
+                    key = key.split('x 10^')[0]
             key = key.replace(' ', '_')
             key = key.lower()
             value_float = self.clean_value(value)
+            if grams:
+                value_float /= 1000
             data_key_vales[key] = value_float * mult
 
         return data_key_vales
@@ -243,7 +260,7 @@ class NasaDataParser:
         else:
             return parsed
 
-    def parse_values(self, lines: list[str]) -> dict[str, dict[str, np.ndarray]]:
+    def parse_values(self, lines: list[str]) -> dict[str, dict[str, list[float]]]:
         """
         Args:
             lines (list[str]): The lines of data from the NASA API
@@ -260,11 +277,11 @@ class NasaDataParser:
                 continue
             parts = line.split(',')
             ts = float(parts[0].strip())
-            pos = np.array([float(parts[2].strip()), float(
-                parts[3].strip()), float(parts[4].strip())])
-            vel = np.array([float(parts[5].strip()), float(
-                parts[6].strip()), float(parts[7].strip())])
-            values[ts] = {'posistion': pos, 'velocity': vel}
+            pos = [float(parts[2].strip()), float(
+                parts[3].strip()), float(parts[4].strip())]
+            vel = [float(parts[5].strip()), float(
+                parts[6].strip()), float(parts[7].strip())]
+            values[ts] = {'position': pos, 'velocity': vel}
         return values
 
     def parse(self):
