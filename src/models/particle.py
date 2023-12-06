@@ -118,7 +118,7 @@ class Particle:
             None
 
         Updates the acceleration of the particle due to the gravitational force
-        of the body passed in.
+        of the bodies passed in.
         """
         total_acceleration = np.array([0, 0, 0], dtype=float)
         for body in bodies:

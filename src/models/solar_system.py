@@ -5,7 +5,7 @@ class SolarSystem:
     def __init__(self,
                  particles: list[Particle],
                  ) -> None:
-        self._particles = {}
+        self._particles: dict[str, Particle] = {}
         for particle in particles:
             self.add_particle(particle)
 
