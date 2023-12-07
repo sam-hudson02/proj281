@@ -200,7 +200,6 @@ class NasaDataParser:
         data_key_vales = {}
         for key, value in data_key_vales_str.items():
             mult = 1
-            key = key.split(',')[0]
             grams = False
             if '(g)' in key:
                 grams = True
@@ -211,9 +210,14 @@ class NasaDataParser:
                 if 'x10^' in key:
                     mult = 10 ** self.str_to_float(key.split('^')[1])
                     key = key.split('x10^')[0]
-                if 'x 10^' in key:
+                elif 'x 10^' in key:
                     mult = 10 ** self.str_to_float(key.split('^')[1])
                     key = key.split('x 10^')[0]
+                elif '10^' in key:
+                    print('found 10^ in key:', key)
+                    mult = 10 ** self.str_to_float(key.split('^')[1])
+                    key = key.split('10^')[0]
+            key = key.split(',')[0]
             key = key.replace(' ', '_')
             key = key.lower()
             value_float = self.clean_value(value)
@@ -276,11 +280,19 @@ class NasaDataParser:
             if ',' not in line:
                 continue
             parts = line.split(',')
+
+            # convert from km to m
+            x_pos = float(parts[2].strip()) * 1000
+            y_pos = float(parts[3].strip()) * 1000
+            z_pos = float(parts[4].strip()) * 1000
+
+            x_vel = float(parts[5].strip()) * 1000
+            y_vel = float(parts[6].strip()) * 1000
+            z_vel = float(parts[7].strip()) * 1000
+
             ts = float(parts[0].strip())
-            pos = [float(parts[2].strip()), float(
-                parts[3].strip()), float(parts[4].strip())]
-            vel = [float(parts[5].strip()), float(
-                parts[6].strip()), float(parts[7].strip())]
+            pos = [x_pos, y_pos, z_pos]
+            vel = [x_vel, y_vel, z_vel]
             values[ts] = {'position': pos, 'velocity': vel}
         return values
 

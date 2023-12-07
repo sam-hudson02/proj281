@@ -161,6 +161,27 @@ class Particle:
         """
         return self.mass * self.velocity
 
+    def potential_energy(self, bodies: list[Particle]) -> float:
+        """
+        Args:
+            bodies (list[Particle]): A list of particles that are exerting a
+            gravitational force on the particle.
+        Returns:
+            np.float64: The potential energy of the particle.
+        """
+        potential = 0.0
+        for body in bodies:
+            # calculate the distance between the two particles
+            distance = np.linalg.norm(self.position - body.position)
+
+            # calculate the gravitational force
+            force = self.G * self.mass * body.mass / distance**2
+
+            # calculate the potential
+            potential += force * distance
+
+        return -float(potential)
+
     def __str__(self):
         return "Particle: {0}, Mass: {1:.3e}, Position: {2}, \
                 Velocity: {3}, Acceleration: {4}".format(
@@ -171,7 +192,7 @@ class Particle:
             self.acceleration
         )
 
-    def to_json(self):
+    def to_json(self, bodies: list[Particle]):
         """
         Args:
             None
@@ -184,7 +205,8 @@ class Particle:
             'velocity': self.velocity.tolist(),
             'acceleration': self.acceleration.tolist(),
             'ke': self.kinetic_energy,
+            'pe': self.potential_energy(bodies),
             'momentum': self.momentum.tolist(),
             'name': self.name,
-            'mass': self.mass
+            'mass': self.mass,
         }

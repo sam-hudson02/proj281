@@ -9,7 +9,8 @@ import json
 
 
 class SolarSystemSim:
-    def __init__(self, config: SolarSystemConfig):
+    def __init__(self, config: SolarSystemConfig,
+                 save_file: str | None = None):
         self._ts: float = 0.0
         self._config = config
         self._deltaT = self.get_deltaT()
@@ -20,6 +21,7 @@ class SolarSystemSim:
         self._particles = self.load_particles()
         self._sim_init_time = time.time()
         self._solar_system = SolarSystem(self._particles)
+        self._save_file = save_file
         self._data = {}
 
     def get_deltaT(self) -> float:
@@ -32,6 +34,7 @@ class SolarSystemSim:
             particles_data[self._particle_ids[0]].vector_data.keys())[0]
         self._ts = float(ts)
         for particle_id, data in particles_data.items():
+            print(f'Loading particle {particle_id}...')
             position = np.array(data.vector_data[ts]['position'])
             velocity = np.array(data.vector_data[ts]['velocity'])
             mass = data.object_data.mass
@@ -41,6 +44,8 @@ class SolarSystemSim:
                                 mass=mass,
                                 name=str(name))
             particles.append(particle)
+            # list masses
+            print(f'Particle {particle_id} mass: {mass}')
         return particles
 
     def advance(self) -> None:
@@ -51,11 +56,13 @@ class SolarSystemSim:
         title = 'sol_'
         title += f'{start_str}_'
         title += f'{self._steps}_'
-        dt_str = str(self._deltaT).replace('.', "'")
-        title += f'{dt_str}'
+        dt_str = str(self._deltaT).replace('.', ',')
+        title += f'{dt_str}_'
         title += f'{self._config.method.name.lower()}'
-        title += '.json'
-        with open(f'data/{title}', 'w') as f:
+        if self._save_file is not None:
+            title = self._save_file
+        print(f'Saving data to {title}.json')
+        with open(f'data/{title}.json', 'w') as f:
             json.dump(self._data, f, indent=4)
 
     def run(self) -> None:

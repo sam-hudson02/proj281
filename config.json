@@ -3,7 +3,7 @@
         "depth": "low",
         "start_time": "2023-12-05",
         "steps": 315360,
-        "deltaT": 100.0,
+        "deltaT": 1000.0,
         "method": "verlet",
         "particles": {
             "low": [
