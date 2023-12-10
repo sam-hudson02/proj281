@@ -175,10 +175,7 @@ class Particle:
             distance = np.linalg.norm(self.position - body.position)
 
             # calculate the gravitational force
-            force = self.G * self.mass * body.mass / distance**2
-
-            # calculate the potential
-            potential += force * distance
+            potential = self.G * self.mass * body.mass / distance
 
         return -float(potential)
 

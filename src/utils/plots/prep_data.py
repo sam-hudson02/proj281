@@ -18,6 +18,13 @@ class SimData:
         """
         return self._obj_list
 
+    def times(self) -> list[float]:
+        """
+        Returns:
+            list[float]: The list of times in the simulation.
+        """
+        return list(map(float, self._raw_data.keys()))
+
     def _load_data(self, filename: str) -> dict:
         with open(filename, 'r') as f:
             data = json.load(f)

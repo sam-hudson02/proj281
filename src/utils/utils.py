@@ -65,5 +65,4 @@ def load_data(filename: str = 'data/log.json'):
     return data
 
 
-planets: list[str] = ['mercury', 'venus', 'earth', 'mars',
-                      'jupiter', 'saturn', 'uranus', 'neptune']
+planets: list[str] = ['199', '299', '399', '499', '599', '699', '799', '899']

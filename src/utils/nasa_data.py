@@ -290,7 +290,9 @@ class NasaDataParser:
             y_vel = float(parts[6].strip()) * 1000
             z_vel = float(parts[7].strip()) * 1000
 
-            ts = float(parts[0].strip())
+            jd = float(parts[0].strip())
+            # convert from JD to seconds
+            ts = (jd - 2451545.0) * 86400
             pos = [x_pos, y_pos, z_pos]
             vel = [x_vel, y_vel, z_vel]
             values[ts] = {'position': pos, 'velocity': vel}

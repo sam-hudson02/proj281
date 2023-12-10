@@ -3,6 +3,7 @@ from click import option
 from utils.config import Config
 from utils.plots.prep_data import SimData
 from utils.plots.plot2d import Plot2D
+from utils.plots.animation3d import animation_3d
 import click
 
 
@@ -30,14 +31,18 @@ def sim(sim, config_file: str, plot: bool, output: str | None):
 @option('--animation', '-a', is_flag=True, help='Animate the simulation.')
 def plot(data: str, animation: bool):
     """Plot a simulation."""
+    file_name = data.split('/')[-1].split('.json')[0]
     sim_data = SimData(data)
-    plot = Plot2D(sim_data)
-    plot.plot_all_pos()
-    plot.plot_system_energy()
-    plot.plot_system_momentum()
-    plot.plot_ke(['399'])
-    plot.plot_pe(['399'])
-    plot.plot_energy(['399'])
+    plot2d = Plot2D(sim_data)
+    plot2d.plot_all_pos()
+    plot2d.plot_system_energy()
+    plot2d.plot_system_momentum()
+    plot2d.plot_ke(['399'])
+    plot2d.plot_pe(['399'])
+    plot2d.plot_energy(['399'])
+    if animation:
+        output_file = f'{file_name}_animation_3d'
+        animation_3d(sim_data, filename=output_file)
 
 
 # run click parser
