@@ -2,7 +2,6 @@ import requests
 import json
 from datetime import datetime, timedelta
 import numpy as np
-# Get the data from the NASA API
 
 
 def test_request():
@@ -41,11 +40,22 @@ class NasaObjectData:
         return 0.0
 
 
-class NasaData:
+class NasaVectorData:
     def __init__(self, parsed_json: dict):
+        self._parsed_json = parsed_json
+        print(parsed_json)
+        self.position = np.array(parsed_json['position'])
+        self.velocity = np.array(parsed_json['velocity'])
+
+
+class NasaData:
+    def __init__(self, parsed_json: dict, start_time: datetime):
         self.object_data = NasaObjectData(parsed_json['object_data'])
-        self.vector_data: dict['str',
-                               dict['str', np.ndarray]] = parsed_json['vector_data']
+        self.vector_data: NasaVectorData = NasaVectorData(
+            parsed_json['vector_data'])
+
+        # convert datetime to seconds
+        self.ts = start_time.timestamp()
 
 
 class NasaQuery:
@@ -96,7 +106,8 @@ class NasaQuery:
             cache_title = f'{body_id}_{self.start_time.strftime("%Y-%m-%d")}'
             try:
                 with open(f'data/nasa_cache/{cache_title}.json', 'r') as f:
-                    data[body_id] = NasaData(json.load(f))
+                    data[body_id] = NasaData(json.load(f),
+                                             start_time=self.start_time)
                     print(f'Loaded {body_id} from cache')
                 continue
             except FileNotFoundError:
@@ -106,7 +117,7 @@ class NasaQuery:
                 parsed = NasaDataParser(json_data['result']).parse()
                 with open(f'data/nasa_cache/{cache_title}.json', 'w') as f:
                     json.dump(parsed, f, indent=4)
-                data[body_id] = NasaData(parsed)
+                data[body_id] = NasaData(parsed, start_time=self.start_time)
 
         return data
 
@@ -139,6 +150,16 @@ class NasaDataParser:
         return chunks
 
     def get_midpoint(self, data_lines: list[str]) -> int:
+        """
+        Args:
+            data_lines (list[str]): The lines of data from the NASA API
+        returns:
+            mid_point (int): The index of the midpoint of the data
+
+        Attempts to find the midpoint of nasa planet data, which
+        can be used to split the data into two parts, each of which
+        contains a key and a value.
+        """
         first_data_line = data_lines[0]
         first_data_line = first_data_line.split('=')
         hit_val = False
@@ -160,6 +181,15 @@ class NasaDataParser:
         return mid_point
 
     def parse_object_info(self, lines: list[str]) -> dict:
+        """
+        Args:
+            lines (list[str]): The lines of data from the NASA API
+        returns:
+            object_info (dict): A dictionary containing the object info
+
+        Attempts to parse the object info from the text data.
+        """
+
         data_lines = []
         title_lines = []
         for line in lines:
@@ -228,6 +258,14 @@ class NasaDataParser:
         return data_key_vales
 
     def clean_value(self, value: str) -> float:
+        """
+        Args:
+            value (str): The value to clean
+        returns:
+            value (float): The cleaned value
+
+        Attempts to clean the value of the data.
+        """
         value = value.strip()
         value = value.split('+-')[0]
         value = value.split('+/-')[0]
@@ -239,6 +277,15 @@ class NasaDataParser:
         return value_float * mult
 
     def str_to_float(self, string: str) -> float | list[float]:
+        """
+        Args:
+            string (str): The string to convert
+        returns:
+            float | list[float]: The converted float or list of floats
+
+        Attempts to convert a string to a float or list of floats.
+        """
+
         parts = [string]
         parsed = []
         if ',' in string:
@@ -264,7 +311,7 @@ class NasaDataParser:
         else:
             return parsed
 
-    def parse_values(self, lines: list[str]) -> dict[str, dict[str, list[float]]]:
+    def parse_values(self, lines: list[str]) -> dict[str, list[float]]:
         """
         Args:
             lines (list[str]): The lines of data from the NASA API
@@ -290,15 +337,22 @@ class NasaDataParser:
             y_vel = float(parts[6].strip()) * 1000
             z_vel = float(parts[7].strip()) * 1000
 
-            jd = float(parts[0].strip())
             # convert from JD to seconds
-            ts = (jd - 2451545.0) * 86400
             pos = [x_pos, y_pos, z_pos]
             vel = [x_vel, y_vel, z_vel]
-            values[ts] = {'position': pos, 'velocity': vel}
+            values = {'position': pos, 'velocity': vel}
+
         return values
 
-    def parse(self):
+    def parse(self) -> dict:
+        """
+        Args:
+            None
+        returns:
+            parsed_data (dict): The parsed data from the NASA API
+
+        Attempts to parse the data from the NASA API.
+        """
         parsed_data = {}
         lines = self.data.split('\n')
         chunks = self.get_chunks(lines)
@@ -308,101 +362,8 @@ class NasaDataParser:
             if '$$SOE' in chunk[0]:
                 values = self.parse_values(chunk)
                 parsed_data['vector_data'] = values
+
         return parsed_data
-
-
-def make_request(body: str):
-    url = f"https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND='{body}'&OBJ_DATA='NO'&MAKE_EPHEM='YES'&EPHEM_TYPE='VECTOR'&CENTER='500@0'&START_TIME='2023-12-01'&STOP_TIME='2023-12-02'&STEP_SIZE='1%20d'"
-    return requests.get(url)
-
-
-def get_data():
-
-    bodies = {
-        'mercury': '199',
-        'venus': '299',
-        'earth': '399',
-        'mars': '499',
-        'jupiter': '599',
-        'saturn': '699',
-        'uranus': '799',
-        'neptune': '899',
-        'sun': '10'
-    }
-
-    data = {}
-
-    for name, body in bodies.items():
-        response = make_request(body)
-        data[name] = response.json()
-
-    return data
-
-
-masses = {
-    'mercury': 3.301e23,
-    'venus': 4.867e24,
-    'earth': 5.972e24,
-    'mars': 6.417e23,
-    'jupiter': 1.898e27,
-    'saturn': 5.683e26,
-    'uranus': 8.681e25,
-    'neptune': 1.024e26,
-    'sun': 1.989e30
-}
-
-
-def scrape_values(lines: list[str]):
-    state_search = False
-    state_search_i = 0
-    values = {}
-    for line in lines:
-        line = line.strip()
-        # replace all double spaces with single spaces
-        while '  ' in line:
-            line = line.replace('  ', ' ')
-
-        if line.startswith('$$SOE'):
-            state_search = True
-        if line.startswith('$$EOE'):
-            state_search = False
-
-        if state_search:
-            if state_search_i == 1:
-                data_time = line.split('=')[0].strip()
-                values['time'] = data_time
-
-            if state_search_i == 2:
-                data_x = float(line.split('=')[1][0:-2].strip()) * 1000
-                data_y = float(line.split('=')[2][0:-2].strip()) * 1000
-                data_z = float(line.split('=')[3].strip()) * 1000
-
-                values['position'] = [data_x, data_y, data_z]
-
-            if state_search_i == 3:
-                data_x = float(line.split('=')[1][0:-2].strip()) * 1000
-                data_y = float(line.split('=')[2][0:-2].strip()) * 1000
-                data_z = float(line.split('=')[3].strip()) * 1000
-
-                values['velocity'] = [data_x, data_y, data_z]
-
-            state_search_i += 1
-
-    return values
-
-
-def main_():
-    all_data = get_data()
-    to_save = {}
-    for name, data in all_data.items():
-        results = data['result']
-        lines = results.split('\n')
-        values = scrape_values(lines)
-        values['mass'] = masses[name]
-        print(name, values)
-        to_save[name] = values
-    with open('data/nasa_data.json', 'w') as f:
-        json.dump(to_save, f, indent=4)
 
 
 def main():

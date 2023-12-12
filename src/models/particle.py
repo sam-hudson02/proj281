@@ -189,7 +189,7 @@ class Particle:
             self.acceleration
         )
 
-    def to_json(self, bodies: list[Particle]):
+    def to_json(self, bodies: list[Particle] = []):
         """
         Args:
             None

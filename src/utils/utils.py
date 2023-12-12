@@ -2,6 +2,26 @@ import numpy as np
 import time
 import sys
 import json
+import os
+
+
+def setup_folders() -> None:
+    """
+    Args:
+        None
+    Returns:
+        None
+
+    Creates the folders for the data and plots.
+    """
+    if not os.path.exists('plots'):
+        os.makedirs('plots')
+    if not os.path.exists('data/sims/solarsystem'):
+        os.makedirs('data/sims/solarsystem')
+    if not os.path.exists('data/sims/projectile'):
+        os.makedirs('data/sims/projectile')
+    if not os.path.exists('data/nasa_cache'):
+        os.makedirs('data/nasa_cache')
 
 
 def cart_to_polar(cart: np.ndarray) -> np.ndarray:

@@ -1,0 +1,38 @@
+{
+    "199": {
+        "color": "mediumspringgreen",
+        "name": "Mecury"
+    },
+    "299": {
+        "color": "gold",
+        "name": "Venus"
+    },
+    "399": {
+        "color": "cornflowerblue",
+        "name": "Earth"
+    },
+    "499": {
+        "color": "orangered",
+        "name": "Mars"
+    },
+    "599": {
+        "color": "navajowhite",
+        "name": "Jupiter"
+    },
+    "699": {
+        "color": "papayawhip",
+        "name": "Saturn"
+    },
+    "799": {
+        "color": "powderblue",
+        "name": "Uranus"
+    },
+    "899": {
+        "color": "midnightblue",
+        "name": "Neptune"
+    },
+    "10": {
+        "color": "orange",
+        "name": "Sun"
+    }
+}

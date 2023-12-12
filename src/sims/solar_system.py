@@ -3,12 +3,19 @@ from models.particle import Particle
 from utils.config import SolarSystemConfig
 from utils.nasa_data import NasaQuery
 from utils.utils import log_progress
-import numpy as np
 import time
 import json
 
 
 class SolarSystemSim:
+    """
+    Args:
+        config (SolarSystemConfig): The configuration for the simulation.
+        save_file (str) (optional): The output file for the simulation.
+
+    A class that represents a solar system simulation.
+    """
+
     def __init__(self, config: SolarSystemConfig,
                  save_file: str | None = None):
         self._ts: float = 0.0
@@ -21,51 +28,101 @@ class SolarSystemSim:
         self._particles = self.load_particles()
         self._sim_init_time = time.time()
         self._solar_system = SolarSystem(self._particles)
-        self._save_file = save_file
+        if save_file is not None:
+            self._save_file = save_file
+        else:
+            self._save_file = self._create_title()
         self._data = {}
 
     def get_deltaT(self) -> float:
         return self._config.deltaT
 
     def load_particles(self) -> list[Particle]:
+        """
+        Args:
+            None
+        Returns:
+            particles (list[Particle]): A list of particles.
+
+        Initializes the particles in the simulation using NASA data
+        as the initial state.
+        """
+
         particles = []
         particles_data = self._nq.get_data(self._particle_ids)
-        ts = list(
-            particles_data[self._particle_ids[0]].vector_data.keys())[0]
-        self._ts = float(ts)
+
+        # get timestamp from first particle
+        self._ts = particles_data[self._particle_ids[0]].ts
+
         for particle_id, data in particles_data.items():
             print(f'Loading particle {particle_id}...')
-            position = np.array(data.vector_data[ts]['position'])
-            velocity = np.array(data.vector_data[ts]['velocity'])
+
+            position = data.vector_data.position
+            velocity = data.vector_data.velocity
             mass = data.object_data.mass
             name = particle_id
+
             particle = Particle(position=position,
                                 velocity=velocity,
                                 mass=mass,
                                 name=str(name))
             particles.append(particle)
-            # list masses
-            print(f'Particle {particle_id} mass: {mass}')
+
         return particles
 
     def advance(self) -> None:
+        """
+        Args:
+            None
+        Returns:
+            None
+
+        Advances the simulation by one step.
+        """
         self._solar_system.advance(self._deltaT)
 
-    def save_data(self) -> None:
+    def _create_title(self) -> str:
+        """
+        Args:
+            None
+        Returns:
+            title (str): The title of the output file.
+
+        Generates a title for the output file based on the config.
+        """
         start_str = self._start_time.strftime('%Y-%m-%d')
-        title = 'sol_'
-        title += f'{start_str}_'
+        title = f'{start_str}_'
         title += f'{self._steps}_'
-        dt_str = str(self._deltaT).replace('.', ',')
+        dt_str = str(self._deltaT).replace('.', '-')
         title += f'{dt_str}_'
         title += f'{self._config.method.name.lower()}'
-        if self._save_file is not None:
-            title = self._save_file
-        print(f'Saving data to {title}.json')
-        with open(f'data/{title}.json', 'w') as f:
-            json.dump(self._data, f, indent=4)
+        return title
 
-    def run(self) -> None:
+    def save_data(self) -> str:
+        """
+        Args:
+            None
+        Returns:
+            title (str): The title of the output file.
+
+        Saves the simulation data to a json file.
+        """
+        print(f'Saving data to {self._save_file}.json')
+        with open(f'data/sims/solarsystem/{self._save_file}.json', 'w') as f:
+            json.dump(self._data, f, indent=4)
+        return self._save_file
+
+    def run(self) -> tuple[str, dict]:
+        """
+        Args:
+            None
+        Returns:
+            title (str): The title of the output file.
+            data (dict): The simulation data.
+
+        Runs the simulation.
+        """
+
         print('\n')
         print('Running simulation...')
         for step in range(self._steps):
@@ -79,4 +136,6 @@ class SolarSystemSim:
 
         print('\n')
         print('Saving data...')
-        self.save_data()
+        title = self.save_data()
+
+        return title, self._data

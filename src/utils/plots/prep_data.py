@@ -1,14 +1,20 @@
 import numpy as np
 import json
+from datetime import datetime
 
 
 class SimData:
-    def __init__(self, filename: str):
+    def __init__(self, filename: str, raw_data: dict | None = None):
         self._filename = filename.split('/')[-1].split('.')[0]
-        self._raw_data = self._load_data(filename)
+        if raw_data is None:
+            self._raw_data = self._load_data(filename)
+        else:
+            self._raw_data = raw_data
+
         self._obj_list = list(list(self._raw_data.values())[0].keys())
-        print(self._obj_list)
-        self._obj_list.remove('system_info')
+
+        if 'system_info' in self._obj_list:
+            self._obj_list.remove('system_info')
 
     @property
     def obj_list(self) -> list[str]:
@@ -59,6 +65,43 @@ class SimData:
 
         return obj_x, obj_y, obj_z
 
+    def velocity(self, obj: str = '399') -> tuple[
+            list[float],
+            list[float],
+            list[float],
+            list[float]]:
+        """
+        Args:
+            obj (str): The object to plot.
+        Returns:
+            tuple[list[datetime] list[float],
+                  list[float], list[float]]:
+                The datetime, x, y, and z
+
+        Converts the simulation velocity data into a format that can be
+        plotted.
+        """
+        t = []
+
+        obj_vx = []
+        obj_vy = []
+        obj_vz = []
+
+        for ts in self._raw_data.keys():
+            step = self._raw_data[ts]
+
+            obj_data = step[obj]
+
+            obj_vel = np.array(obj_data['velocity'])
+
+            obj_vx.append(obj_vel[0])
+            obj_vy.append(obj_vel[1])
+            obj_vz.append(obj_vel[2])
+
+            t.append(datetime.fromtimestamp(float(ts)))
+
+        return t, obj_vx, obj_vy, obj_vz
+
     def momentum(self, obj: str = '399') -> tuple[
             list[float],
             list[float],
@@ -87,7 +130,7 @@ class SimData:
 
         return obj_px, obj_py, obj_pz
 
-    def ke(self, obj: str = '399') -> tuple[list[float],
+    def ke(self, obj: str = '399') -> tuple[list[datetime],
                                             list[float]]:
         """
         Args:
@@ -103,13 +146,13 @@ class SimData:
 
         for ts, step in self._raw_data.items():
             obj_data = step[obj]
-
-            times.append(float(ts))
+            time = datetime.fromtimestamp(float(ts))
+            times.append(time)
             obj_ke.append(obj_data['ke'])
 
         return times, obj_ke
 
-    def pe(self, obj: str = '399') -> tuple[list[float],
+    def pe(self, obj: str = '399') -> tuple[list[datetime],
                                             list[float]]:
         """
         Args:
@@ -123,14 +166,15 @@ class SimData:
         times = []
 
         for ts, step in self._raw_data.items():
+            time = datetime.fromtimestamp(float(ts))
             obj_data = step[obj]
 
-            times.append(float(ts))
+            times.append(time)
             obj_pe.append(obj_data['pe'])
 
         return times, obj_pe
 
-    def system_energy(self) -> tuple[list[float], list[float]]:
+    def system_energy(self) -> tuple[list[datetime], list[float]]:
         """
         Returns:
             tuple[list[float], list[float]]: The x, y, and z
@@ -142,13 +186,14 @@ class SimData:
         times = []
 
         for ts, step in self._raw_data.items():
-            times.append(float(ts))
+            time = datetime.fromtimestamp(float(ts))
+            times.append(time)
             ke.append(step['system_info']['energy'])
 
         return times, ke
 
     def system_momentum(self) -> tuple[list[float],
-                                       list[float]]:
+                                       list[datetime]]:
         """
         Returns:
             tuple[list[float], list[float]]: The x, y, and z

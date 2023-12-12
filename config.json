@@ -1,9 +1,9 @@
 {
     "solar_system": {
         "depth": "low",
-        "start_time": "2023-12-05",
-        "steps": 315360,
-        "deltaT": 1000.0,
+        "start_time": "2023-12-08",
+        "steps": 315582,
+        "deltaT": 100.0,
         "method": "verlet",
         "particles": {
             "low": [
@@ -18,5 +18,13 @@
                 10
             ]
         }
+    },
+    "projectile": {
+        "deltaT": 0.01,
+        "method": "euler",
+        "steps": 10000,
+        "log_interval": 10,
+        "gravity": -9.81,
+        "mass": 1.0
     }
 }

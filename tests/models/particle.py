@@ -152,13 +152,13 @@ class TestParticle(unittest.TestCase):
         self.assertTrue(np.allclose(self.particle.position,
                                     analytical_position, rtol=0.01))
 
-    def test_euler_cramer(self):
+    def test_euler_cromer(self):
         """
         Tests the euler-cramer method accuracy
         """
 
         self.create_particle()
-        self.particle.set_method(UpdateMethod.EULER_CRAMER)
+        self.particle.set_method(UpdateMethod.EULER_CROMER)
 
         # evolvle the particle for 10 seconds with 1000 steps
         self.steps = 1000
@@ -171,7 +171,7 @@ class TestParticle(unittest.TestCase):
             10)
 
         print('\n')
-        print("=" * 10 + " Euler-Cramer " + "=" * 10)
+        print("=" * 10 + " Euler-Cromer " + "=" * 10)
         self.compare_position(analytical_position)
         print('\n')
         self.compare_velocity(analytical_velocity)
