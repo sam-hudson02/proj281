@@ -34,5 +34,49 @@
     "10": {
         "color": "orange",
         "name": "Sun"
+    },
+    "satellite": {
+        "color": "#ea9218",
+        "name": "satellite"
+    },
+    "501": {
+        "color": "#adac9a",
+        "name": "Io"
+    },
+    "503": {
+        "color": "#24d095",
+        "name": "Europa"
+    },
+    "504": {
+        "color": "#c25e6a",
+        "name": "Ganymede"
+    },
+    "606": {
+        "color": "#c0699f",
+        "name": "Titan"
+    },
+    "301": {
+        "color": "#f1062b",
+        "name": "Luna"
+    },
+    "801": {
+        "color": "#dae31e",
+        "name": "Triton"
+    },
+    "134340": {
+        "color": "#b4ec4c",
+        "name": "Pluto"
+    },
+    "euler": {
+        "color": "orange",
+        "name": "Euler"
+    },
+    "euler_cromer": {
+        "color": "#b96de4",
+        "name": "Euler Cromer"
+    },
+    "verlet": {
+        "color": "#bff52a",
+        "name": "Verlet"
     }
 }

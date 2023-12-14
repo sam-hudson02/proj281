@@ -20,6 +20,7 @@ class SolarSystemSim:
                  save_file: str | None = None):
         self._ts: float = 0.0
         self._config = config
+        self._method = self._config.method
         self._deltaT = self.get_deltaT()
         self._particle_ids = self._config.particles
         self._start_time = self._config.start_time
@@ -27,7 +28,7 @@ class SolarSystemSim:
         self._nq = NasaQuery(start_time=self._start_time)
         self._particles = self.load_particles()
         self._sim_init_time = time.time()
-        self._solar_system = SolarSystem(self._particles)
+        self._solar_system = SolarSystem(self._particles, self._method)
         if save_file is not None:
             self._save_file = save_file
         else:
@@ -65,10 +66,30 @@ class SolarSystemSim:
             particle = Particle(position=position,
                                 velocity=velocity,
                                 mass=mass,
-                                name=str(name))
+                                name=str(name),
+                                method=self._method)
             particles.append(particle)
 
+        for particle in particles:
+            other_particles = particles.copy()
+            other_particles.remove(particle)
+            particle.set_bodies(other_particles)
+
+        for particle in particles:
+            particle.init_acceleration()
+
         return particles
+
+    def reset(self) -> None:
+        """
+        Args:
+            None
+        Returns:
+            None
+
+        Resets the simulation.
+        """
+        self._solar_system.reset()
 
     def advance(self) -> None:
         """

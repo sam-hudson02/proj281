@@ -192,8 +192,8 @@ class SimData:
 
         return times, ke
 
-    def system_momentum(self) -> tuple[list[float],
-                                       list[datetime]]:
+    def system_momentum(self) -> tuple[list[datetime],
+                                       list[float]]:
         """
         Returns:
             tuple[list[float], list[float]]: The x, y, and z
@@ -205,7 +205,7 @@ class SimData:
         times = []
 
         for ts, step in self._raw_data.items():
-            times.append(float(ts))
+            times.append(datetime.fromtimestamp(float(ts)))
             momentum_vec = np.array(step['system_info']['momentum'])
             momentum = np.linalg.norm(momentum_vec)
             p.append(momentum)

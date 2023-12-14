@@ -1,4 +1,4 @@
-from models.particle import Particle
+from models.particle import Particle, UpdateMethod
 from utils.config import ProjectileConfig
 from utils.utils import log_progress
 import numpy as np
@@ -28,6 +28,7 @@ class ProjectileSim:
         self.steps = self.config.steps
         self.log_interval = self.config.log_interval
         self._data = {}
+        self._method = self.config.method
         if output_file:
             self.output_file = output_file
         else:
@@ -42,6 +43,8 @@ class ProjectileSim:
 
         Advances the simulation by one step.
         """
+        if self._method == UpdateMethod.VERLET:
+            self.particle.verlet_update_position(self.deltaT)
         self.particle.update(self.deltaT)
 
     def _create_title(self) -> str:
@@ -63,12 +66,35 @@ class ProjectileSim:
         title += f'{m_str}'
         return title
 
+    def reset(self) -> None:
+        """
+        Args:
+            None
+        Returns:
+            None
+
+        Resets the simulation.
+        """
+        self.particle.reset()
+
+    def set_method(self, method: UpdateMethod) -> None:
+        """
+        Args:
+            method (str): The method to use for the simulation.
+        Returns:
+            None
+
+        Sets the method for the simulation.
+        """
+        self._method = method
+        self.particle.set_method(method)
+
     def save(self) -> str:
         """
         Args:
             None
         Returns:
-            title (str): The title of the output file. 
+            title (str): The title of the output file.
 
         Saves the data to a json file.
         """
@@ -79,7 +105,7 @@ class ProjectileSim:
 
         return self.output_file
 
-    def run(self) -> tuple[str, dict]:
+    def run(self, output: str | None = None) -> tuple[str, dict]:
         """
         Args:
             None
@@ -100,12 +126,14 @@ class ProjectileSim:
                 break
 
             if step % self.log_interval == 0:
-                step_time = step * self.deltaT
+                step_time = (step + 1) * self.deltaT
                 self._data[step_time] = {
                     "projectile": self.particle.to_json()
                 }
                 log_progress(step, self.steps)
 
         print('\nSimulation finished!')
+        if output is not None:
+            self.output_file = output
         title = self.save()
         return title, self._data

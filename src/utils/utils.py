@@ -3,6 +3,7 @@ import time
 import sys
 import json
 import os
+import pandas as pd
 
 
 def setup_folders() -> None:
@@ -83,6 +84,31 @@ def load_data(filename: str = 'data/log.json'):
     with open(filename) as f:
         data = json.load(f)
     return data
+
+
+def vec_to_str(vec: np.ndarray, unit: str | None = None) -> str:
+    """
+    Args:
+        vec (np.ndarray): The vector to convert.
+    Returns:
+        str: The string representation of the vector.
+    """
+    if unit is None:
+        return f"({vec[0]:.3f}, {vec[1]:.3f}, {vec[2]:.3f})"
+    else:
+        return f"({vec[0]:.3f}{unit}, {vec[1]:.3f}{unit}, {vec[2]:.3f}{unit})"
+
+
+def percent_to_str(percent: float) -> str:
+    # 3 significant figures
+
+    # format to x 10^y
+    if percent == 0:
+        return '0.00 %'
+    elif percent < 0.01:
+        return f"{percent:.2e} %"
+    else:
+        return f"{percent:.3f} %"
 
 
 planets: list[str] = ['199', '299', '399', '499', '599', '699', '799', '899']

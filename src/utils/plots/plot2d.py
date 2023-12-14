@@ -2,9 +2,151 @@ from matplotlib import pyplot as plt
 from utils.plots.prep_data import SimData
 from utils.plots.style import Styles
 from ing_theme_matplotlib import mpl_style
-from datetime import datetime
 import numpy as np
 import os
+
+
+class CompareProjectiles:
+    def __init__(self, data_1: SimData, data_2: SimData):
+        self._data_1: SimData = data_1
+        self._data_2: SimData = data_2
+
+    def init_plot(self) -> None:
+        """
+        Initializes the plot.
+        """
+        mpl_style(dark=True)
+
+    def save_plot(self, tag: str) -> None:
+        """
+        Saves the plot.
+        """
+        plt.legend()
+
+        if not os.path.exists(f'plots/projectile/{self._data_1._filename}'):
+            os.makedirs(f'plots/projectile/{self._data_1._filename}')
+        plt.savefig(f'plots/projectile/{self._data_1._filename}/{tag}.png',
+                    dpi=300, bbox_inches='tight')
+        plt.clf()
+
+    def plot_pos(self) -> None:
+        """
+        Plots the position of the object.
+        """
+        self.init_plot()
+        x_1, y_1, _ = self._data_1.position("projectile")
+        x_2, y_2, _ = self._data_2.position("projectile")
+
+        plt.plot(x_1, y_1, label=self._data_1._filename, linewidth=0.5)
+        plt.plot(x_2, y_2, label=self._data_2._filename, linewidth=0.5)
+
+        # add labels
+        plt.xlabel('x (m)')
+        plt.ylabel('y (m)')
+
+        # add title
+        plt.title('Position of Projectile')
+
+        self.save_plot('pos')
+
+    def plot_vel(self) -> None:
+        """
+        Plots the y velocity of the object.
+        """
+        self.init_plot()
+        t_1, _, vy_1, _ = self._data_1.velocity("projectile")
+        t_2, _, vy_2, _ = self._data_2.velocity("projectile")
+
+        plt.plot(t_1, vy_1, label=self._data_1._filename, linewidth=0.5)
+        plt.plot(t_2, vy_2, label=self._data_2._filename, linewidth=0.5)
+
+        # add labels
+        plt.xlabel('t (s)')
+        plt.ylabel('v (m/s)')
+
+        # add title
+        plt.title('Velocity of Projectile')
+
+        self.save_plot('vel')
+
+    def plot_momentum(self) -> None:
+        """
+        Plots the momentum of the object.
+        """
+        self.init_plot()
+        t, p_1 = self._data_1.system_momentum()
+        t, p_2 = self._data_2.system_momentum()
+
+        plt.plot(t, p_1, label=self._data_1._filename, linewidth=0.5)
+        plt.plot(t, p_2, label=self._data_2._filename, linewidth=0.5)
+
+        # add labels
+        plt.xlabel('t (s)')
+        plt.ylabel('p (kg m/s)')
+
+        # add title
+        plt.title('Momentum of Projectile')
+
+        self.save_plot('mom')
+
+
+class CompareSol:
+    def __init__(self, datas: list[SimData]):
+        self._datas: list[SimData] = datas
+        self._styles: Styles = Styles()
+
+    def init_plot(self) -> None:
+        """
+        Initializes the plot.
+        """
+        mpl_style(dark=True)
+
+    def save_plot(self, tag: str) -> None:
+        """
+        Saves the plot.
+        """
+        plt.legend()
+
+        if not os.path.exists('plots/solarsystem/comparison'):
+            os.makedirs('plots/solarsystem/comparison')
+        plt.savefig(f'plots/solarsystem/comparison/{tag}.png',
+                    dpi=300, bbox_inches='tight')
+        plt.clf()
+
+    def plot_momentum(self) -> None:
+        """
+        Plots the momentum of the object.
+        """
+        self.init_plot()
+        for data in self._datas:
+            style = self._styles.get_style(data._filename)
+            t, p = data.system_momentum()
+            plt.plot(t, p, label=style.name, color=style.color, linewidth=0.5)
+
+        # add labels
+        plt.xlabel('t (s)')
+        plt.ylabel('p (kg m/s)')
+
+        # add title
+        plt.title('Momentum of Projectile')
+
+        self.save_plot('mom')
+
+    def plot_energy(self) -> None:
+        self.init_plot()
+        for data in self._datas:
+            style = self._styles.get_style(data._filename)
+            t, e = data.system_energy()
+            plt.plot(t, e, label=style.name, color=style.color, linewidth=0.5)
+
+        # add labels
+        plt.xlabel('t (s)')
+        plt.ylabel('E (J)')
+
+        # add title
+        plt.title('Energy of System')
+
+        self.save_plot('energy')
 
 
 class Plot2DProjectile:
@@ -37,7 +179,7 @@ class Plot2DProjectile:
         self.init_plot()
         x, y, _ = self._data.position("projectile")
 
-        plt.plot(x, y)
+        plt.plot(x, y, linewidth=0.5)
 
         # add labels
         plt.xlabel('x (m)')
@@ -212,7 +354,7 @@ class Plot2DSol:
         plt.ylabel('Total Energy (J)', fontsize=8)
 
         # ylim at least 20% of max
-        plt.ylim(bottom=0, top=max(energy)*1.2)
+        # plt.ylim(bottom=0, top=max(energy)*1.2)
 
         plt.title('Total Energy of System')
 
@@ -261,7 +403,7 @@ class Plot2DSol:
         plt.plot(t, p, label='Momentum', linewidth=0.5)
 
         # ylim at least 20% of max
-        plt.ylim(bottom=0, top=max(p)*1.2)
+        # plt.ylim(bottom=0, top=max(p)*1.2)
 
         # label axes
         plt.xlabel('date', fontsize=8)

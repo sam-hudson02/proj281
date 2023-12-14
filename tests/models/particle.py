@@ -136,6 +136,7 @@ class TestParticle(unittest.TestCase):
         self.steps = 1000
         self.dt = 10 / self.steps
         for _ in range(self.steps):
+            self.particle.verlet_update_position(self.dt)
             self.particle.update(self.dt)
 
         # get the analytical solution

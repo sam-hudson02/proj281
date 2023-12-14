@@ -19,15 +19,20 @@ class Particle:
         self,
         position: np.ndarray = np.array([0, 0, 0], dtype=float),
         velocity: np.ndarray = np.array([0, 0, 0], dtype=float),
-        acceleration: np.ndarray = np.array([0, -10, 0], dtype=float),
+        acceleration: np.ndarray = np.array([0, 0, 0], dtype=float),
         name: str = 'Ball',
         mass: float = 1.0,
         method: UpdateMethod = UpdateMethod.EULER
     ):
+        self.init_position = position
+        self.init_velocity = velocity
+        self.first_acceleration = acceleration
+
         # convert numpy arrays to arrays of floats
         self.position = np.array(position, dtype=float)
         self.velocity = np.array(velocity, dtype=float)
         self.acceleration = np.array(acceleration, dtype=float)
+        self.last_acceleration = np.array(acceleration, dtype=float)
 
         self.name = name
         self.mass = mass
@@ -39,9 +44,25 @@ class Particle:
         # create a dictionary of update methods
         self._method_map: dict[UpdateMethod, Callable[[float], None]] = {
             UpdateMethod.EULER: self.euler_update,
-            UpdateMethod.VERLET: self.verlet_update,
-            UpdateMethod.EULER_CROMER: self.euler_cromer_update
+            UpdateMethod.EULER_CROMER: self.euler_cromer_update,
+            UpdateMethod.VERLET: self.verlet_update_velocity
         }
+
+        self._bodies = []
+
+    def reset(self) -> None:
+        """
+        Args:
+            None
+        Returns:
+            None
+
+        Resets the particle to its initial state.
+        """
+        self.position = self.init_position
+        self.velocity = self.init_velocity
+        self.acceleration = self.first_acceleration
+        self.last_acceleration = self.first_acceleration
 
     def set_method(self, method: UpdateMethod) -> None:
         """
@@ -53,6 +74,31 @@ class Particle:
         Sets the method used to update the particle.
         """
         self._method = method
+
+    def init_acceleration(self) -> None:
+        """
+        Args:
+            None
+        Returns:
+            None
+
+        Initializes the acceleration of the particle.
+        """
+        accel = self._calculate_acceleration(self._bodies)
+        self.acceleration = accel
+        self.last_acceleration = accel
+
+    def set_bodies(self, bodies: list[Particle]) -> None:
+        """
+        Args:
+            bodies (list[Particle]): A list of particles that are exerting a
+            gravitational force on the particle.
+        Returns:
+            None
+
+        Sets the bodies that are exerting a gravitational force on the particle.
+        """
+        self._bodies = bodies
 
     @property
     def method(self) -> UpdateMethod:
@@ -71,7 +117,7 @@ class Particle:
         self.position += self.velocity * deltaT
         self.velocity += self.acceleration * deltaT
 
-    def verlet_update(self, deltaT: float) -> None:
+    def verlet_update_position(self, deltaT: float) -> None:
         """
         Args:
             deltaT (float): The amount of time to update the particle by.
@@ -82,7 +128,19 @@ class Particle:
         using the Verlet method.
         """
         self.position += self.velocity * deltaT + 0.5 * self.acceleration * deltaT**2
-        self.velocity += 0.5 * (self.acceleration + self.acceleration) * deltaT
+
+    def verlet_update_velocity(self, deltaT: float) -> None:
+        """
+        Args:
+            deltaT (float): The amount of time to update the particle by.
+        Returns:
+            None
+
+        Updates the position and velocity of the particle by the amount of time
+        using the Verlet method.
+        """
+        self.velocity += 0.5 * (self.acceleration +
+                                self.last_acceleration) * deltaT
 
     def euler_cromer_update(self, deltaT: float) -> None:
         """
@@ -108,8 +166,24 @@ class Particle:
         """
         self._method_map[self._method](deltaT)
 
-    def update_gravitational_acceleration(self,
-                                          bodies: list[Particle]) -> None:
+    def update_gravitational_acceleration(self) -> None:
+        """
+        Args:
+            None
+        Returns:
+            None
+
+        Updates the acceleration of the particle due to the gravitational force
+        of the bodies.
+        """
+        if len(self._bodies) == 0:
+            return
+
+        self.last_acceleration = self.acceleration
+
+        self.acceleration = self._calculate_acceleration(self._bodies)
+
+    def _calculate_acceleration(self, bodies: list[Particle]) -> np.ndarray:
         """
         Args:
             bodies (list[Particle]): A list of particles that are exerting a
@@ -139,7 +213,7 @@ class Particle:
             total_acceleration += acceleration
 
         # update the acceleration
-        self.acceleration = total_acceleration
+        return total_acceleration
 
     @property
     def kinetic_energy(self) -> np.float64:
@@ -161,7 +235,7 @@ class Particle:
         """
         return self.mass * self.velocity
 
-    def potential_energy(self, bodies: list[Particle]) -> float:
+    def potential_energy(self) -> float:
         """
         Args:
             bodies (list[Particle]): A list of particles that are exerting a
@@ -170,7 +244,7 @@ class Particle:
             np.float64: The potential energy of the particle.
         """
         potential = 0.0
-        for body in bodies:
+        for body in self._bodies:
             # calculate the distance between the two particles
             distance = np.linalg.norm(self.position - body.position)
 
@@ -189,7 +263,7 @@ class Particle:
             self.acceleration
         )
 
-    def to_json(self, bodies: list[Particle] = []):
+    def to_json(self):
         """
         Args:
             None
@@ -202,7 +276,7 @@ class Particle:
             'velocity': self.velocity.tolist(),
             'acceleration': self.acceleration.tolist(),
             'ke': self.kinetic_energy,
-            'pe': self.potential_energy(bodies),
+            'pe': self.potential_energy(),
             'momentum': self.momentum.tolist(),
             'name': self.name,
             'mass': self.mass,

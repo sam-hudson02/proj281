@@ -19,14 +19,13 @@ def test_parser():
         data = f.read()
     parser = NasaDataParser(data)
     parsed = parser.parse()
-    print(parsed)
 
 
 class NasaObjectData:
     def __init__(self, parsed_json: dict):
         self._parsed_json = parsed_json
-        self.mass = parsed_json['mass']
-        self.radius = parsed_json['vol._mean_radius']
+        self.mass = self.find_mass()
+        self.radius = self.find_mean_radius()
         self.rot_rate = self.find_rot_rate()
 
     def find_rot_rate(self) -> float:
@@ -39,11 +38,48 @@ class NasaObjectData:
                 return self._parsed_json[k]
         return 0.0
 
+    def find_mean_radius(self) -> float:
+        """
+        Returns:
+            (float): mean radius (m)
+        """
+        for k in self._parsed_json.keys():
+            if 'mean_radius' in k:
+                return float(self._parsed_json[k]) * 1000
+        raise ValueError('Could not find mean radius')
+
+    def find_mass(self) -> float:
+        """
+        Returns:
+            (float): mass (kg)
+        """
+        for k in self._parsed_json.keys():
+            if 'mass' in k:
+                return float(self._parsed_json[k])
+
+        density = self.find_density()
+        radius = self.find_mean_radius()
+
+        # convert g cm^-3 to kg m^-3
+        volume = (4 / 3) * np.pi * radius**3
+        mass = density * volume
+
+        return mass
+
+    def find_density(self) -> float:
+        """
+        Returns:
+            (float): density (kg/m^3)
+        """
+        for k in self._parsed_json.keys():
+            if 'density' in k or 'dens' in k:
+                return float(self._parsed_json[k]) * 1000
+        raise ValueError('Could not find density')
+
 
 class NasaVectorData:
     def __init__(self, parsed_json: dict):
         self._parsed_json = parsed_json
-        print(parsed_json)
         self.position = np.array(parsed_json['position'])
         self.velocity = np.array(parsed_json['velocity'])
 
@@ -117,6 +153,8 @@ class NasaQuery:
                 parsed = NasaDataParser(json_data['result']).parse()
                 with open(f'data/nasa_cache/{cache_title}.json', 'w') as f:
                     json.dump(parsed, f, indent=4)
+                with open(f'data/nasa_cache/{cache_title}_raw.txt', 'w') as f:
+                    f.write(json_data['result'])
                 data[body_id] = NasaData(parsed, start_time=self.start_time)
 
         return data
@@ -202,7 +240,7 @@ class NasaDataParser:
 
         data_key_vales_raw = []
         for line in data_lines:
-            first_part = line[0:mid_point]
+            first_part = line[0:mid_point+1]
             second_part = line[mid_point:]
             if '=' in first_part:
                 data_key_vales_raw.append(first_part)
@@ -225,6 +263,8 @@ class NasaDataParser:
             ' (kg)',
             ' (deg)',
             ' (rad/s)',
+            ' (km^3/s^2)',
+            ' (g cm^-3)'
         ]
 
         data_key_vales = {}
@@ -244,7 +284,6 @@ class NasaDataParser:
                     mult = 10 ** self.str_to_float(key.split('^')[1])
                     key = key.split('x 10^')[0]
                 elif '10^' in key:
-                    print('found 10^ in key:', key)
                     mult = 10 ** self.str_to_float(key.split('^')[1])
                     key = key.split('10^')[0]
             key = key.split(',')[0]
