@@ -92,11 +92,14 @@ def vec_to_str(vec: np.ndarray, unit: str | None = None) -> str:
         vec (np.ndarray): The vector to convert.
     Returns:
         str: The string representation of the vector.
+
+    Converts a vector to a string with 4 significant figures.
+    Uses scientific notation if the number is too small / large.
     """
     if unit is None:
-        return f"({vec[0]:.3f}, {vec[1]:.3f}, {vec[2]:.3f})"
+        return f"({vec[0]:.2e}, {vec[1]:.2e}, {vec[2]:.2e})"
     else:
-        return f"({vec[0]:.3f}{unit}, {vec[1]:.3f}{unit}, {vec[2]:.3f}{unit})"
+        return f"({vec[0]:.2e} {unit}, {vec[1]:.2e} {unit}, {vec[2]:.2e} {unit})"
 
 
 def percent_to_str(percent: float) -> str:
@@ -104,11 +107,11 @@ def percent_to_str(percent: float) -> str:
 
     # format to x 10^y
     if percent == 0:
-        return '0.00 %'
+        return '0.00 \%'
     elif percent < 0.01:
-        return f"{percent:.2e} %"
+        return f"{percent:.2e} \%"
     else:
-        return f"{percent:.3f} %"
+        return f"{percent:.3f} \%"
 
 
 planets: list[str] = ['199', '299', '399', '499', '599', '699', '799', '899']

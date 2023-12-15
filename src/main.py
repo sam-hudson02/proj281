@@ -84,6 +84,7 @@ def compare_orbit(files: list[str]) -> None:
     compare = CompareSol(datas)
     compare.plot_momentum()
     compare.plot_energy()
+    compare.plot_pos()
 
     print('Plotting 2d plots...')
 

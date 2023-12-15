@@ -222,16 +222,16 @@ class TestSolarSystem(unittest.TestCase):
         indexes = [
             "Actual Position (m) (x, y, z)",
             "Analytical Position (m) (x, y, z)",
-            "Position Accuracy (%)",
+            "Position Accuracy",
             "Actual Radius (m)",
             "Analytical Radius (m)",
-            "Radius Accuracy (%)",
+            "Radius Accuracy",
             "Actual Velocity (m/s) (x, y, z)",
             "Analytical Velocity (m/s) (x, y, z)",
-            "Velocity Accuracy (%)",
+            "Velocity Accuracy",
             "Actual Speed (m/s)",
             "Analytical Speed (m/s)",
-            "Speed Accuracy (%)"
+            "Speed Accuracy"
         ]
 
         # rename indexes

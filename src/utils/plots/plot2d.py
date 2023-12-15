@@ -124,11 +124,11 @@ class CompareSol:
             plt.plot(t, p, label=style.name, color=style.color, linewidth=0.5)
 
         # add labels
-        plt.xlabel('t (s)')
+        plt.xlabel('date')
         plt.ylabel('p (kg m/s)')
 
         # add title
-        plt.title('Momentum of Projectile')
+        plt.title('Compasison of Momentum of Earth and Satellite System')
 
         self.save_plot('mom')
 
@@ -140,13 +140,50 @@ class CompareSol:
             plt.plot(t, e, label=style.name, color=style.color, linewidth=0.5)
 
         # add labels
-        plt.xlabel('t (s)')
+        plt.xlabel('date')
         plt.ylabel('E (J)')
 
         # add title
-        plt.title('Energy of System')
+        plt.title('Compasison of Energy of Earth and Satellite System')
 
         self.save_plot('energy')
+
+    def plot_pos(self) -> None:
+        """
+        Plots the position of the object.
+        """
+        colors = ['red', 'green', 'blue', 'orange', 'purple', 'brown', 'pink']
+        self.init_plot()
+        for data in self._datas:
+            color = colors[0]
+            colors.pop(0)
+
+            earth_x, earth_y, _ = data.position("399")
+            sattelite_x, sattelite_y, _ = data.position("satellite")
+
+            plt.plot(earth_x, earth_y, color=color,
+                     label=f'Earth {data._filename}', linewidth=0.5)
+            plt.plot(sattelite_x, sattelite_y, color=color,
+                     label=f'Satellite {data._filename}', linewidth=0.5)
+
+            # plot o for final position
+            plt.plot(earth_x[0], earth_y[0], color=color,
+                     marker='o', markersize=3)
+
+            plt.plot(sattelite_x[0], sattelite_y[0], color=color,
+                     marker='o', markersize=3)
+
+        # add labels
+        plt.xlabel('x (m)')
+        plt.ylabel('y (m)')
+
+        # make axis equal
+        plt.axis('equal')
+
+        # add title
+        plt.title('Comparison of Position of Earth and Satellite')
+
+        self.save_plot('pos')
 
 
 class Plot2DProjectile:
@@ -186,7 +223,7 @@ class Plot2DProjectile:
         plt.ylabel('y (m)')
 
         # add title
-        plt.title('Position of Projectile')
+        plt.gca().set_aspect('equal', adjustable='box')
 
         self.save_plot('pos')
 
